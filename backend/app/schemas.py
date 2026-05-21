@@ -180,3 +180,13 @@ class TimelineEventResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class VisitorStatsResponse(BaseModel):
+    total_views: int
+    unique_monitors: int
+    active_connections: int
+
+    class Config:
+        from_attributes = True
+

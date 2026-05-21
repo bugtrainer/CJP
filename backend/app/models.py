@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, BigInteger, Float, Boolean, ForeignKey, Table, Date, DateTime, Text, JSON
+from sqlalchemy import Column, Integer, String, BigInteger, Float, Boolean, ForeignKey, Table, Date, DateTime, Text, JSON, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
@@ -248,3 +248,19 @@ class TimelineEvent(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     movement = relationship("Movement", back_populates="timeline_events")
+
+
+class VisitorLog(Base):
+    __tablename__ = "visitor_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ip_hash = Column(String(64), nullable=True, index=True)
+    path = Column(String(255), default="/", index=True)
+    user_agent_hash = Column(String(64), nullable=True, index=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    __table_args__ = (
+        Index("idx_visitor_logs_path_timestamp", "path", "timestamp"),
+        Index("idx_visitor_logs_ip_timestamp", "ip_hash", "timestamp"),
+    )
+

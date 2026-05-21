@@ -1,0 +1,8 @@
+# cjphub.com — robots.txt
+User-agent: *
+Allow: /
+
+# Block raw API endpoints from indexing
+Disallow: /api/
+
+Sitemap: https://www.cjphub.com/sitemap.xml

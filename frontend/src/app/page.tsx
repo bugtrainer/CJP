@@ -16,6 +16,7 @@ import {
   FileText,
   AlertTriangle
 } from "lucide-react";
+import ObservatoryTelemetry from "@/components/ObservatoryTelemetry";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("all");
@@ -620,6 +621,9 @@ export default function Home() {
         </section>
 
       </main>
+
+      {/* ── Observatory Telemetry & Traffic ── */}
+      <ObservatoryTelemetry />
 
       {/* Footer safe disclaimer */}
       <footer className="border-t border-slate-900 bg-[#09090b] py-8 text-center text-xs text-slate-500 px-4">
