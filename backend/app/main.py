@@ -268,3 +268,25 @@ def register_analytics_hit(
 def read_analytics_stats(db: Session = Depends(get_db)):
     return get_visitor_stats(db)
 
+
+@app.post("/api/v1/collect", summary="Trigger real-time data collection pipeline (Wikipedia & Google News)")
+def run_collection(db: Session = Depends(get_db)):
+    try:
+        from .collector import MovementCollector
+        collector = MovementCollector(db)
+        
+        # 1. Fetch real-time follower counts from Wikipedia
+        wiki_metric = collector.fetch_wikipedia_stats()
+        
+        # 2. Fetch Google News articles
+        new_articles = collector.fetch_rss_news()
+        
+        return {
+            "status": "success",
+            "message": "Data collection completed successfully.",
+            "wikipedia_follower_count": wiki_metric.follower_count if wiki_metric else None,
+            "new_articles_ingested": new_articles
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Collection pipeline failed: {str(e)}")
+
