@@ -10,6 +10,19 @@ from . import models, schemas
 # Optional: Run schema migrations on startup (safe for development)
 models.Base.metadata.create_all(bind=engine)
 
+# Auto-seed if database is empty
+try:
+    from .database import SessionLocal
+    db = SessionLocal()
+    if not db.query(models.Movement).filter(models.Movement.slug == "cjp").first():
+        print("Empty production database detected. Auto-seeding initial observatory telemetry...")
+        from .seed import seed_data
+        seed_data()
+    db.close()
+except Exception as e:
+    print(f"Auto-seed check failed: {e}")
+
+
 app = FastAPI(
     title="CJPHub Observatory API",
     description="Real-time archive and observatory platform tracking narratives, memes, and platform events for internet-native movements.",
