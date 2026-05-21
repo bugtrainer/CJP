@@ -23,7 +23,7 @@ def test_collector_execution():
         
         print("\n--- Testing High Frequency Metrics Logger ---")
         platform = "instagram"
-        follower_count = 11250000
+        follower_count = 17350000
         mentions_per_min = 450
         print(f"Logging simulated metrics: {platform} - Followers: {follower_count}, MPM: {mentions_per_min}")
         metric = collector.log_high_frequency_metrics(

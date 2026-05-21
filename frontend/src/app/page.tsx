@@ -1,6 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { 
   Activity, 
   ShieldAlert, 
@@ -14,18 +23,34 @@ import {
   CheckCircle,
   HelpCircle,
   FileText,
-  AlertTriangle
+  AlertTriangle,
+  BarChart3
 } from "lucide-react";
 import ObservatoryTelemetry from "@/components/ObservatoryTelemetry";
+
+const fadeIn = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.08, duration: 0.4, ease: "easeOut" },
+  }),
+};
+
+const sectionFade = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isLive, setIsLive] = useState(false);
+  const [metricsHistory, setMetricsHistory] = useState<any[]>([]);
 
   // 1. Core metrics state with realistic CJP telemetry fallback values
   const [metrics, setMetrics] = useState({
-    followers: "11,248,930",
+    followers: "14,832,930",
     followerChange: "+1.2M (24h)",
     mentionsPerMinute: "420",
     crawlerStatus: "Active",
@@ -170,7 +195,18 @@ export default function Home() {
 
   // Dynamic fetching hook connecting UI to backend API database
   useEffect(() => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const getApiUrl = () => {
+      if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+      if (typeof window !== "undefined") {
+        const hostname = window.location.hostname;
+        if (hostname === "localhost") {
+          return "http://localhost:8000";
+        }
+      }
+      return "http://127.0.0.1:8000";
+    };
+
+    const API_URL = getApiUrl();
 
     const fetchTelemetryData = async () => {
       try {
@@ -180,12 +216,12 @@ export default function Home() {
         setIsLive(true);
 
         // A. Load Metrics
-        const metricsRes = await fetch(`${API_URL}/api/v1/metrics/live`);
+        const metricsRes = await fetch(`${API_URL}/api/v1/metrics/live?limit=48`);
         if (metricsRes.ok) {
           const metricsData = await metricsRes.json();
           if (metricsData.length > 0) {
             const instaMetric = metricsData.find((m: any) => m.platform === "instagram");
-            const totalFollowers = instaMetric ? instaMetric.follower_count : 11248930;
+            const totalFollowers = instaMetric ? instaMetric.follower_count : 14832930;
             const totalMpm = metricsData.reduce((acc: number, m: any) => acc + (m.mentions_per_minute || 0), 0);
             
             setMetrics({
@@ -195,6 +231,19 @@ export default function Home() {
               crawlerStatus: "Active",
               lastUpdated: "Just now"
             });
+
+            // Build time-series chart data from Instagram metrics
+            const instaMetrics = metricsData
+              .filter((m: any) => m.platform === "instagram")
+              .reverse();
+            setMetricsHistory(instaMetrics.map((m: any) => {
+              const d = new Date(m.timestamp);
+              return {
+                time: d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }),
+                followers: Math.round(m.follower_count / 1000),
+                mentions: m.mentions_per_minute,
+              };
+            }));
           }
         }
 
@@ -223,20 +272,18 @@ export default function Home() {
         if (narrativesRes.ok) {
           const narrativesData = await narrativesRes.json();
           if (narrativesData.length > 0) {
-            setNarratives(narrativesData.map((n: any, idx: number) => {
-              const staticWeight = ["95%", "80%", "42%"][idx] || "85%";
-              const staticPlatform = ["Reddit / Instagram", "Instagram / YouTube", "Reddit / X (Twitter)"][idx] || "Reddit";
-              const staticEvidence = [142, 84, 39][idx] || 15;
-              return {
-                id: n.id,
-                title: n.title,
-                description: n.description,
-                confidence: Math.round(n.confidence_score * 100) + "%",
-                organicWeight: staticWeight,
-                primaryPlatform: staticPlatform,
-                evidenceCount: staticEvidence
-              };
-            }));
+            const defaultWeights = ["95%", "80%", "42%"];
+            const defaultPlatforms = ["Reddit / Instagram", "Instagram / YouTube", "Reddit / X (Twitter)"];
+            const defaultEvidence = [142, 84, 39];
+            setNarratives(narrativesData.map((n: any, idx: number) => ({
+              id: n.id,
+              title: n.title,
+              description: n.description,
+              confidence: Math.round(n.confidence_score * 100) + "%",
+              organicWeight: defaultWeights[idx % defaultWeights.length] || "85%",
+              primaryPlatform: defaultPlatforms[idx % defaultPlatforms.length] || "Reddit",
+              evidenceCount: defaultEvidence[idx % defaultEvidence.length] || 15
+            })));
           }
         }
 
@@ -397,7 +444,12 @@ export default function Home() {
         <section className="lg:col-span-2 space-y-8">
           
           {/* A. Catch Me Up (Central Typographic Summary Brief) */}
-          <div className="border border-slate-800 bg-[#161619] rounded-lg p-6 space-y-4">
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={sectionFade}
+            className="border border-slate-800 bg-[#161619] rounded-lg p-6 space-y-4"
+          >
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="text-sm font-semibold tracking-wider uppercase text-amber-500 flex items-center gap-2">
                 <Flame size={16} />
@@ -417,21 +469,112 @@ export default function Home() {
               {summary.bullet_points && summary.bullet_points.length > 0 && (
                 <ul className="space-y-2 text-sm text-slate-300">
                   {summary.bullet_points.map((bullet, idx) => (
-                    <li key={idx} className="flex items-start gap-2.5">
+                    <motion.li
+                      key={idx}
+                      custom={idx}
+                      initial="hidden"
+                      animate="visible"
+                      variants={fadeIn}
+                      className="flex items-start gap-2.5"
+                    >
                       <span className="text-amber-500 font-bold shrink-0 mt-0.5">•</span>
                       <span>{formatBoldText(bullet)}</span>
-                    </li>
+                    </motion.li>
                   ))}
                 </ul>
               )}
 
-              <div className="pt-2 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-mono text-slate-500">
-                <span>Ironic Sentiment: <strong className="text-slate-300">{summary.sentiment_distribution?.ironic || 50}%</strong></span>
-                <span>Supportive: <strong className="text-slate-300">{summary.sentiment_distribution?.supportive || 20}%</strong></span>
-                <span>Critical: <strong className="text-slate-300">{summary.sentiment_distribution?.critical || 30}%</strong></span>
+              {/* Visual Sentiment Distribution Bar */}
+              <div className="pt-2 space-y-2">
+                <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Sentiment Distribution</span>
+                <div className="flex h-2.5 w-full rounded-full overflow-hidden">
+                  <div
+                    className="bg-amber-600 transition-all duration-700"
+                    style={{ width: `${summary.sentiment_distribution?.ironic || 50}%` }}
+                    title={`Ironic: ${summary.sentiment_distribution?.ironic || 50}%`}
+                  />
+                  <div
+                    className="bg-emerald-600 transition-all duration-700"
+                    style={{ width: `${summary.sentiment_distribution?.supportive || 20}%` }}
+                    title={`Supportive: ${summary.sentiment_distribution?.supportive || 20}%`}
+                  />
+                  <div
+                    className="bg-red-500/80 transition-all duration-700"
+                    style={{ width: `${summary.sentiment_distribution?.critical || 30}%` }}
+                    title={`Critical: ${summary.sentiment_distribution?.critical || 30}%`}
+                  />
+                </div>
+                <div className="flex justify-between text-[10px] font-mono text-slate-500">
+                  <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-amber-600" /> Ironic {summary.sentiment_distribution?.ironic || 50}%</span>
+                  <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-emerald-600" /> Supportive {summary.sentiment_distribution?.supportive || 20}%</span>
+                  <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-red-500/80" /> Critical {summary.sentiment_distribution?.critical || 30}%</span>
+                </div>
               </div>
             </div>
-          </div>
+          </motion.div>
+
+          {/* A2. Metrics Trend Chart */}
+          {metricsHistory.length > 1 && (
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={sectionFade}
+              className="border border-slate-800 bg-[#161619] rounded-lg p-5 space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-semibold tracking-wider uppercase text-slate-300 flex items-center gap-2">
+                  <BarChart3 size={14} className="text-amber-500" />
+                  Follower Growth Trend (24h)
+                </h2>
+                <span className="text-[10px] font-mono text-slate-500">Instagram · thousands</span>
+              </div>
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={metricsHistory} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="followerGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#d97706" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#d97706" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="time"
+                      tick={{ fontSize: 9, fill: "#64748b" }}
+                      axisLine={{ stroke: "#1e1e24" }}
+                      tickLine={false}
+                      interval={"preserveStartEnd"}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 9, fill: "#64748b" }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v: number) => `${v}k`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#161619",
+                        border: "1px solid #2d2d34",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        color: "#f8fafc",
+                      }}
+                      labelStyle={{ color: "#94a3b8" }}
+                      formatter={(value: number) => [`${value.toLocaleString()}k`, "Followers"]}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="followers"
+                      stroke="#d97706"
+                      strokeWidth={2}
+                      fill="url(#followerGrad)"
+                      dot={false}
+                      activeDot={{ r: 3, fill: "#d97706", stroke: "#161619", strokeWidth: 2 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
+          )}
 
           {/* B. Narrative Tracker (Emergence Mapping) */}
           <div className="space-y-4">
@@ -443,8 +586,16 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-              {narratives.map(narrative => (
-                <div key={narrative.id} className="border border-slate-800 rounded-lg p-5 bg-[#161619]/50 hover:bg-[#161619] transition-all space-y-3">
+              {narratives.map((narrative, idx) => (
+                <motion.div
+                  key={narrative.id}
+                  custom={idx}
+                  initial="hidden"
+                  animate="visible"
+                  variants={fadeIn}
+                  whileHover={{ scale: 1.01, borderColor: "rgba(217,119,6,0.3)" }}
+                  className="border border-slate-800 rounded-lg p-5 bg-[#161619]/50 hover:bg-[#161619] transition-colors space-y-3"
+                >
                   <div className="flex items-start justify-between gap-4">
                     <h3 className="font-bold text-slate-200 text-sm">
                       {narrative.title}
@@ -464,7 +615,7 @@ export default function Home() {
                     <span>Organic Weight: <strong className="text-slate-300">{narrative.organicWeight}</strong></span>
                     <span>Trace Evidence: <span className="text-amber-500 underline cursor-pointer">{narrative.evidenceCount} posts</span></span>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -567,9 +718,18 @@ export default function Home() {
 
             {/* Filtered streams listing */}
             <div className="space-y-3">
+              <AnimatePresence mode="wait">
               {filteredPosts.length > 0 ? (
-                filteredPosts.map(post => (
-                  <div key={post.id} className="border border-slate-900 rounded p-4 bg-[#161619]/20 hover:bg-[#161619]/40 transition-all space-y-2">
+                filteredPosts.map((post, idx) => (
+                  <motion.div
+                    key={post.id}
+                    custom={idx}
+                    initial="hidden"
+                    animate="visible"
+                    exit={{ opacity: 0, y: -8 }}
+                    variants={fadeIn}
+                    className="border border-slate-900 rounded p-4 bg-[#161619]/20 hover:bg-[#161619]/40 transition-colors space-y-2"
+                  >
                     <div className="flex justify-between items-center text-[10px] font-mono">
                       <span className="text-slate-400 font-semibold">{post.author} ({post.platform})</span>
                       <span className="text-slate-500">{post.time}</span>
@@ -607,13 +767,19 @@ export default function Home() {
                         </span>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 ))
               ) : (
-                <div className="text-center py-6 text-xs text-slate-500">
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-6 text-xs text-slate-500"
+                >
                   No telemetry posts match active filters.
-                </div>
+                </motion.div>
               )}
+              </AnimatePresence>
             </div>
 
           </div>
@@ -629,7 +795,7 @@ export default function Home() {
       <footer className="border-t border-slate-900 bg-[#09090b] py-8 text-center text-xs text-slate-500 px-4">
         <div className="max-w-7xl mx-auto space-y-2">
           <p>
-            **CJPHub Observatory** is an independent, non-partisan narrative archive and research platform.
+            <strong className="text-slate-300">CJPHub Observatory</strong> is an independent, non-partisan narrative archive and research platform.
           </p>
           <p className="text-[10px] text-slate-600 leading-relaxed max-w-3xl mx-auto">
             This platform uses mathematical vectors and programmatic clustering to map emerging online discourse signals. It does not endorse, represent, or mobilize support for the Cockroach Janta Party or any registered political factions. Raw snapshots are archived for socio-digital research purposes under fair-use commentary exemptions.

@@ -382,14 +382,14 @@ def seed_data():
         db.add(models.MetricsTracker(
             movement_id=movement.id,
             platform="instagram",
-            follower_count=11248930 - (24 - i) * 50000,
+            follower_count=14832930 - i * 50000,
             mentions_per_minute=350 + i * 5,
             timestamp=time_offset
         ))
         db.add(models.MetricsTracker(
             movement_id=movement.id,
             platform="x",
-            follower_count=850000 - (24 - i) * 2000,
+            follower_count=802000 - i * 2000,
             mentions_per_minute=220 + i * 3,
             timestamp=time_offset
         ))

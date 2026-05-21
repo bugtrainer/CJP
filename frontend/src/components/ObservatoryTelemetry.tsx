@@ -13,7 +13,7 @@ interface VisitorStats {
 }
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://api.cjphub.com";
+  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
 const POLL_INTERVAL_MS = 30_000; // refresh stats every 30 s without a new hit
 
@@ -36,6 +36,19 @@ export default function ObservatoryTelemetry() {
   useEffect(() => {
     const path =
       typeof window !== "undefined" ? window.location.pathname : "/";
+
+    const getApiUrl = () => {
+      if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+      if (typeof window !== "undefined") {
+        const hostname = window.location.hostname;
+        if (hostname === "localhost") {
+          return "http://localhost:8000";
+        }
+      }
+      return API_BASE;
+    };
+
+    const apiBaseUrl = getApiUrl();
 
     // Initialize local simulation fallback parameters
     let localViewsNum = 14832;
@@ -74,7 +87,7 @@ export default function ObservatoryTelemetry() {
     async function registerHit() {
       try {
         const res = await fetch(
-          `${API_BASE}/api/v1/analytics/hit?path=${encodeURIComponent(path)}`,
+          `${apiBaseUrl}/api/v1/analytics/hit?path=${encodeURIComponent(path)}`,
           { method: "POST" }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -85,7 +98,7 @@ export default function ObservatoryTelemetry() {
       } catch (err) {
         // Log connection warning silently for developers in console
         console.warn(
-          `[CJPHub Telemetry] Deployed API endpoint (${API_BASE}) unreachable. Fallback simulation active.`,
+          `[CJPHub Telemetry] Deployed API endpoint (${apiBaseUrl}) unreachable. Fallback simulation active.`,
           err
         );
         
@@ -93,7 +106,7 @@ export default function ObservatoryTelemetry() {
         
         // Still try to show cached stats via GET from real backend
         try {
-          const res = await fetch(`${API_BASE}/api/v1/analytics/stats`);
+          const res = await fetch(`${apiBaseUrl}/api/v1/analytics/stats`);
           if (res.ok) {
             const data: VisitorStats = await res.json();
             setStats(data);
@@ -121,7 +134,7 @@ export default function ObservatoryTelemetry() {
     pollingRef.current = setInterval(async () => {
       if (!isSimulated) {
         try {
-          const res = await fetch(`${API_BASE}/api/v1/analytics/stats`);
+          const res = await fetch(`${apiBaseUrl}/api/v1/analytics/stats`);
           if (res.ok) {
             const data: VisitorStats = await res.json();
             setStats(data);
