@@ -130,10 +130,24 @@ export default function ObservatoryTelemetry() {
       </div>
 
       {/* ── Terminal status line ─────────────────────────────────────────────── */}
-      <div className="telemetry-terminal" aria-live="polite">
-        <span className="terminal-prompt">observatory@cjphub:~$</span>
-        <span className="terminal-cmd"> stream --monitor --realtime --filter=all</span>
-        <span className="terminal-cursor" aria-hidden="true">{cursor}</span>
+      <div className={`telemetry-terminal ${error ? "terminal-error-state" : ""}`} aria-live="polite">
+        {error ? (
+          <>
+            <span className="terminal-prompt">observatory@cjphub:~$</span>
+            <span className="terminal-cmd"> verify-connection --verbose</span>
+            <div className="terminal-error-msg">
+              <span className="error-symbol">⚡</span> CONNECTION REFUSED: API offline or domain misconfigured. 
+              <br className="mobile-break" />
+              Target: <code className="terminal-code">{API_BASE}</code>. Set <code className="terminal-code">NEXT_PUBLIC_API_URL</code> env in Vercel to your deployed backend.
+            </div>
+          </>
+        ) : (
+          <>
+            <span className="terminal-prompt">observatory@cjphub:~$</span>
+            <span className="terminal-cmd"> stream --monitor --realtime --filter=all</span>
+            <span className="terminal-cursor" aria-hidden="true">{cursor}</span>
+          </>
+        )}
       </div>
 
       {/* ── Styles (scoped via className prefix) ─────────────────────────────── */}
@@ -249,12 +263,37 @@ export default function ObservatoryTelemetry() {
           white-space: nowrap;
           text-overflow: ellipsis;
         }
+        .telemetry-terminal.terminal-error-state {
+          white-space: normal;
+          overflow: visible;
+        }
         .terminal-prompt { color: rgba(0, 200, 255, 0.5); }
         .terminal-cmd { color: rgba(0, 255, 136, 0.25); }
         .terminal-cursor {
           color: #00ff88;
           font-weight: 700;
           margin-left: 2px;
+        }
+        .terminal-error-msg {
+          margin-top: 0.25rem;
+          color: #ffb84d;
+          font-size: 0.62rem;
+          line-height: 1.4;
+          border-left: 2px solid #ff9900;
+          padding-left: 0.5rem;
+        }
+        .error-symbol {
+          color: #ff3333;
+          animation: flash 1s steps(2, start) infinite;
+        }
+        @keyframes flash {
+          to { visibility: hidden; }
+        }
+        .terminal-code {
+          background: rgba(255, 255, 255, 0.05);
+          padding: 0.05rem 0.25rem;
+          border-radius: 3px;
+          color: #e6e6e6;
         }
 
         @media (max-width: 600px) {
