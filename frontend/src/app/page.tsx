@@ -210,7 +210,7 @@ export default function Home() {
 
     const fetchTelemetryData = async () => {
       try {
-        const testRes = await fetch(`${API_URL}/`);
+        const testRes = await fetch(`${API_URL}/api/v1/health`);
         if (!testRes.ok) throw new Error("FastAPI Backend Offline");
 
         setIsLive(true);
