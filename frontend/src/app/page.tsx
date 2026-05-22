@@ -255,10 +255,8 @@ export default function Home() {
             });
 
             // Build time-series chart data from Instagram metrics
-            const instaMetrics = metricsData
-              .filter((m: any) => m.platform === "instagram")
-              .reverse();
-            setMetricsHistory(instaMetrics.map((m: any) => {
+            const chartMetrics = [...instaMetrics].reverse();
+            setMetricsHistory(chartMetrics.map((m: any) => {
               const d = new Date(m.timestamp);
               return {
                 time: d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }),
