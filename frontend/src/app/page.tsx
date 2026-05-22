@@ -196,14 +196,15 @@ export default function Home() {
   // Dynamic fetching hook connecting UI to backend API database
   useEffect(() => {
     const getApiUrl = () => {
-      if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
       if (typeof window !== "undefined") {
         const hostname = window.location.hostname;
-        if (hostname === "localhost") {
-          return "http://localhost:8000";
+        if (hostname === "localhost" || hostname === "127.0.0.1") {
+          return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         }
       }
-      return "http://127.0.0.1:8000";
+
+      // Production must use the relative /api route so Vercel rewrites requests to Railway.
+      return "";
     };
 
     const API_URL = getApiUrl();
