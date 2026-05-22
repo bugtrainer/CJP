@@ -3,6 +3,7 @@ import datetime
 import urllib.request
 import urllib.parse
 import re
+import hashlib
 from typing import List, Dict, Any
 import feedparser
 import praw
@@ -89,8 +90,11 @@ class MovementCollector:
             if not entry_link:
                 continue
 
+            # Generate a safe external_id that fits in String(255)
+            safe_ext_id = entry_link if len(entry_link) <= 250 else hashlib.md5(entry_link.encode('utf-8')).hexdigest()
+
             # Check for existing external URL globally to avoid duplicate Google News links
-            existing = self.db.query(models.Post).filter(models.Post.external_id == entry_link).first()
+            existing = self.db.query(models.Post).filter(models.Post.external_id == safe_ext_id).first()
             if existing:
                 continue
 
@@ -119,7 +123,7 @@ class MovementCollector:
                 movement_id=self.movement.id,
                 source_id=source.id,
                 source_platform="news",
-                external_id=entry_link,
+                external_id=safe_ext_id,
                 title=getattr(entry, "title", "No Title"),
                 content=getattr(entry, "summary", ""),
                 author=source_title,
@@ -193,8 +197,11 @@ class MovementCollector:
                 self.db.refresh(source)
 
             for ref_url in valid_refs:
+                # Generate a safe external_id that fits in String(255)
+                safe_ext_id = ref_url if len(ref_url) <= 250 else hashlib.md5(ref_url.encode('utf-8')).hexdigest()
+
                 # Check for existing external URL globally
-                existing = self.db.query(models.Post).filter(models.Post.external_id == ref_url).first()
+                existing = self.db.query(models.Post).filter(models.Post.external_id == safe_ext_id).first()
                 if existing:
                     continue
 
@@ -212,7 +219,7 @@ class MovementCollector:
                     movement_id=self.movement.id,
                     source_id=source.id,
                     source_platform="news",
-                    external_id=ref_url,
+                    external_id=safe_ext_id,
                     title="Wikipedia Cited Article",
                     content="Extracted from Wikipedia references. " + ref_url,
                     author="Wikipedia Contributor",
