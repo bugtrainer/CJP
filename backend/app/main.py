@@ -1,7 +1,6 @@
 import os
 import hashlib
 import asyncio
-import threading
 from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, Query, Request
@@ -54,6 +53,19 @@ def _run_collection_sync():
 
             # 2. Fetch Google News articles
             new_articles = collector.fetch_rss_news()
+
+            # 3. Generate a fresh Gemini summary when a key is configured
+            generated_summary_id = None
+            if os.getenv("GEMINI_API_KEY"):
+                try:
+                    from .ai_synthesizer import generate_summary_from_recent_posts
+                    summary = generate_summary_from_recent_posts(db)
+                    generated_summary_id = summary.id
+                    print(f"[Scheduler]   Gemini summary generated: {generated_summary_id}")
+                except Exception as synth_error:
+                    print(f"[Scheduler]   Gemini synthesis skipped/failed: {synth_error}")
+            else:
+                print("[Scheduler]   Gemini synthesis skipped: GEMINI_API_KEY not configured")
 
             _last_collection_time = datetime.now(timezone.utc)
             print(f"[Scheduler] Collection completed at {_last_collection_time.isoformat()}")
@@ -153,7 +165,7 @@ def get_latest_summary(
         .first()
         
     if not summary:
-        # Return fallback mock summary if none generated yet
+        # Return fallback summary if none generated yet
         return schemas.SummaryResponse(
             id=0,
             movement_id=movement.id,
@@ -161,7 +173,7 @@ def get_latest_summary(
             summary_text="Observatory data collection initialized. Live sentiment calculations and narrative clustering are actively tracking community streams.",
             bullet_points=[
                 "First-class tracking of CJP Reddit networks and satire propagation vectors initialized.",
-                "Real-time platform moderation taking places are being logged.",
+                "Real-time platform moderation tracking is being logged.",
                 "LLM clustering synthesis scheduler is armed and awaiting baseline crawl sizes."
             ],
             narrative_shifts=[
@@ -245,6 +257,7 @@ def get_posts_feed(
     content_type: Optional[str] = None,
     sentiment: Optional[str] = None,
     exclude_duplicates: bool = True,
+    fresh_only: bool = Query(True, description="Exclude seed/demo records and return collected posts first"),
     limit: int = 30,
     offset: int = 0,
     db: Session = Depends(get_db)
@@ -261,8 +274,11 @@ def get_posts_feed(
         query = query.filter(models.Post.sentiment == sentiment)
     if exclude_duplicates:
         query = query.filter(models.Post.is_duplicate == False)
+    if fresh_only:
+        from .ai_synthesizer import DEMO_EXTERNAL_IDS
+        query = query.filter(~models.Post.external_id.in_(DEMO_EXTERNAL_IDS))
         
-    posts = query.order_by(models.Post.published_at.desc())\
+    posts = query.order_by(models.Post.published_at.desc(), models.Post.ingested_at.desc())\
         .offset(offset)\
         .limit(limit)\
         .all()
@@ -338,7 +354,7 @@ def read_analytics_stats(db: Session = Depends(get_db)):
     return get_visitor_stats(db)
 
 
-@app.post("/api/v1/collect", summary="Trigger real-time data collection pipeline (Wikipedia & Google News)")
+@app.post("/api/v1/collect", summary="Trigger real-time data collection pipeline, then Gemini synthesis when configured")
 def run_collection(db: Session = Depends(get_db)):
     try:
         from .collector import MovementCollector
@@ -349,18 +365,48 @@ def run_collection(db: Session = Depends(get_db)):
         
         # 2. Fetch Google News articles
         new_articles = collector.fetch_rss_news()
+
+        # 3. Generate Gemini summary from latest fresh posts
+        summary_id = None
+        summary_error = None
+        if os.getenv("GEMINI_API_KEY"):
+            try:
+                from .ai_synthesizer import generate_summary_from_recent_posts
+                summary = generate_summary_from_recent_posts(db)
+                summary_id = summary.id
+            except Exception as e:
+                summary_error = str(e)
+        else:
+            summary_error = "GEMINI_API_KEY is not set"
         
         global _last_collection_time
         _last_collection_time = datetime.now(timezone.utc)
         
         return {
             "status": "success",
-            "message": "Data collection completed successfully.",
+            "message": "Data collection completed.",
             "wikipedia_follower_count": wiki_metric.follower_count if wiki_metric else None,
-            "new_articles_ingested": new_articles
+            "new_articles_ingested": new_articles,
+            "gemini_summary_generated": summary_id is not None,
+            "gemini_summary_id": summary_id,
+            "gemini_summary_error": summary_error
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Collection pipeline failed: {str(e)}")
+
+
+@app.post("/api/v1/summaries/generate", response_model=schemas.SummaryResponse, summary="Generate a fresh Gemini summary from collected posts")
+def generate_summary_endpoint(
+    slug: str = "cjp",
+    timeframe: str = "daily",
+    limit: int = 30,
+    db: Session = Depends(get_db),
+):
+    try:
+        from .ai_synthesizer import generate_summary_from_recent_posts
+        return generate_summary_from_recent_posts(db, movement_slug=slug, timeframe=timeframe, limit=limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gemini summary generation failed: {str(e)}")
 
 
 @app.get("/api/v1/health", summary="Health check with last collection time")
@@ -373,4 +419,3 @@ def health_check():
         "collection_running": _collection_running,
         "server_time": datetime.now(timezone.utc).isoformat()
     }
-
