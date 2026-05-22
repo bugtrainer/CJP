@@ -1,6 +1,9 @@
 import os
 import hashlib
+import asyncio
+import threading
 from datetime import datetime, timedelta, timezone
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -26,10 +29,76 @@ except Exception as e:
     print(f"Auto-seed check failed: {e}")
 
 
+# ── Background Collection Scheduler ──────────────────────────────────
+COLLECTION_INTERVAL_SECONDS = int(os.getenv("COLLECTION_INTERVAL_SECONDS", "1800"))  # 30 min default
+_last_collection_time: datetime | None = None
+_collection_running = False
+
+
+def _run_collection_sync():
+    """Run data collection in a synchronous context (background thread)."""
+    global _last_collection_time, _collection_running
+    if _collection_running:
+        print("[Scheduler] Collection already in progress, skipping.")
+        return
+    _collection_running = True
+    try:
+        db = SessionLocal()
+        try:
+            from .collector import MovementCollector
+            collector = MovementCollector(db)
+
+            # 1. Fetch real-time follower counts from Wikipedia
+            wiki_metric = collector.fetch_wikipedia_stats()
+            wiki_count = wiki_metric.follower_count if wiki_metric else None
+
+            # 2. Fetch Google News articles
+            new_articles = collector.fetch_rss_news()
+
+            _last_collection_time = datetime.now(timezone.utc)
+            print(f"[Scheduler] Collection completed at {_last_collection_time.isoformat()}")
+            print(f"[Scheduler]   Wikipedia followers: {wiki_count}")
+            print(f"[Scheduler]   New articles ingested: {new_articles}")
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"[Scheduler] Collection failed: {e}")
+    finally:
+        _collection_running = False
+
+
+async def _collection_loop():
+    """Async loop that triggers collection every COLLECTION_INTERVAL_SECONDS."""
+    # Initial collection after a short startup delay
+    await asyncio.sleep(10)
+    print(f"[Scheduler] Running initial data collection...")
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _run_collection_sync)
+
+    while True:
+        await asyncio.sleep(COLLECTION_INTERVAL_SECONDS)
+        print(f"[Scheduler] Running scheduled data collection...")
+        await loop.run_in_executor(None, _run_collection_sync)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Start the background collection scheduler on app startup."""
+    task = asyncio.create_task(_collection_loop())
+    print(f"[Scheduler] Background collection started (interval: {COLLECTION_INTERVAL_SECONDS}s)")
+    yield
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
 app = FastAPI(
     title="CJPHub Observatory API",
     description="Real-time archive and observatory platform tracking narratives, memes, and platform events for internet-native movements.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS Setup for Vercel Frontend and local testing
@@ -281,6 +350,9 @@ def run_collection(db: Session = Depends(get_db)):
         # 2. Fetch Google News articles
         new_articles = collector.fetch_rss_news()
         
+        global _last_collection_time
+        _last_collection_time = datetime.now(timezone.utc)
+        
         return {
             "status": "success",
             "message": "Data collection completed successfully.",
@@ -289,4 +361,16 @@ def run_collection(db: Session = Depends(get_db)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Collection pipeline failed: {str(e)}")
+
+
+@app.get("/api/v1/health", summary="Health check with last collection time")
+def health_check():
+    return {
+        "status": "online",
+        "service": "CJPHub Observatory API",
+        "scheduler_interval_seconds": COLLECTION_INTERVAL_SECONDS,
+        "last_collection": _last_collection_time.isoformat() if _last_collection_time else None,
+        "collection_running": _collection_running,
+        "server_time": datetime.now(timezone.utc).isoformat()
+    }
 

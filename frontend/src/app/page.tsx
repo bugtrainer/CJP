@@ -220,16 +220,38 @@ export default function Home() {
         if (metricsRes.ok) {
           const metricsData = await metricsRes.json();
           if (metricsData.length > 0) {
-            const instaMetric = metricsData.find((m: any) => m.platform === "instagram");
-            const totalFollowers = instaMetric ? instaMetric.follower_count : 14832930;
+            const instaMetrics = metricsData.filter((m: any) => m.platform === "instagram");
+            const latestInsta = instaMetrics[0];
+            const totalFollowers = latestInsta ? latestInsta.follower_count : 14832930;
             const totalMpm = metricsData.reduce((acc: number, m: any) => acc + (m.mentions_per_minute || 0), 0);
+            
+            // Calculate real follower change from oldest to newest instagram metric
+            let followerChangeStr = "+1.2M (24h)";
+            if (instaMetrics.length > 1) {
+              const oldest = instaMetrics[instaMetrics.length - 1];
+              const delta = totalFollowers - oldest.follower_count;
+              if (delta > 0) {
+                const deltaStr = delta >= 1000000 ? `+${(delta / 1000000).toFixed(1)}M` : delta >= 1000 ? `+${(delta / 1000).toFixed(0)}K` : `+${delta}`;
+                followerChangeStr = `${deltaStr} (24h)`;
+              }
+            }
+
+            // Compute real "last updated" from latest metric timestamp
+            let lastUpdatedStr = "Just now";
+            if (latestInsta?.timestamp) {
+              const minsDiff = Math.round((Date.now() - new Date(latestInsta.timestamp).getTime()) / 60000);
+              if (minsDiff < 1) lastUpdatedStr = "Just now";
+              else if (minsDiff < 60) lastUpdatedStr = `${minsDiff} mins ago`;
+              else if (minsDiff < 1440) lastUpdatedStr = `${Math.round(minsDiff / 60)}h ago`;
+              else lastUpdatedStr = `${Math.round(minsDiff / 1440)}d ago`;
+            }
             
             setMetrics({
               followers: Number(totalFollowers).toLocaleString(),
-              followerChange: "+1.2M (24h)",
+              followerChange: followerChangeStr,
               mentionsPerMinute: String(totalMpm || 420),
               crawlerStatus: "Active",
-              lastUpdated: "Just now"
+              lastUpdated: lastUpdatedStr
             });
 
             // Build time-series chart data from Instagram metrics
@@ -352,6 +374,10 @@ export default function Home() {
     };
 
     fetchTelemetryData();
+
+    // Auto-refresh data every 5 minutes
+    const refreshInterval = setInterval(fetchTelemetryData, 5 * 60 * 1000);
+    return () => clearInterval(refreshInterval);
   }, []);
 
   // Safe helper parsing inline bold strings safely in JSX
