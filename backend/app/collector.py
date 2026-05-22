@@ -178,8 +178,9 @@ class MovementCollector:
             external_links = soup.find_all('a', href=True)
             refs = [a.get('href') for a in external_links if a.get('href').startswith('http')]
             
-            # Filter out wikimedia/wikipedia internal subdomains
-            valid_refs = [url for url in refs if 'wikipedia.org' not in url and 'wikimedia.org' not in url and 'wikidata.org' not in url]
+            # Filter out wikimedia/wikipedia internal subdomains and generic search links
+            forbidden = ['wikipedia.org', 'wikimedia.org', 'wikidata.org', 'mediawiki.org', 'wikimediafoundation.org', 'google.com', 'worldcat.org', 'jstor.org']
+            valid_refs = [url for url in refs if not any(f in url for f in forbidden)]
             
             # Verify or create the Wikipedia source in the db
             source = self.db.query(models.Source).filter(models.Source.url == wiki_url).first()

@@ -3,7 +3,7 @@ import hashlib
 import asyncio
 from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException, Query, Request
+from fastapi import FastAPI, Depends, HTTPException, Query, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func, distinct
@@ -21,6 +21,13 @@ try:
         print("Empty production database detected. Auto-seeding initial observatory telemetry...")
         from .seed import seed_data
         seed_data()
+        
+    # Clean up garbage Wikipedia references from before the filter was updated
+    deleted = db.query(models.Post).filter(models.Post.title == "Wikipedia Cited Article").delete(synchronize_session=False)
+    if deleted > 0:
+        print(f"Cleaned up {deleted} garbage Wikipedia references from the database.")
+        db.commit()
+        
     db.close()
 except Exception as e:
     print(f"Auto-seed check failed: {e}")
@@ -325,14 +332,12 @@ def read_analytics_stats(db: Session = Depends(get_db)):
 
 @app.get("/api/v1/collect")
 @app.post("/api/v1/collect")
-def run_collection(db: Session = Depends(get_db)):
+def run_collection(background_tasks: BackgroundTasks):
     try:
-        result = _collect_and_summarize(db)
-        global _last_collection_time
-        _last_collection_time = datetime.now(timezone.utc)
-        return {"status": "success", "message": "Data collection completed.", **result}
+        background_tasks.add_task(_run_collection_sync)
+        return {"status": "processing", "message": "Data collection and LLM synthesis triggered in the background. Check back in 15 seconds."}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Collection pipeline failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to start collection pipeline: {str(e)}")
 
 
 @app.get("/api/v1/summaries/generate", response_model=schemas.SummaryResponse)
