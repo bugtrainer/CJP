@@ -174,20 +174,34 @@ class MovementCollector:
             html = urllib.request.urlopen(req).read()
             soup = BeautifulSoup(html, 'html.parser')
 
-            # Extract all external links
+            # Extract all external links with their text
             external_links = soup.find_all('a', href=True)
-            refs = [a.get('href') for a in external_links if a.get('href').startswith('http')]
-            
-            # Filter out wikimedia/wikipedia internal subdomains and generic search links
             forbidden = ['wikipedia.org', 'wikimedia.org', 'wikidata.org', 'mediawiki.org', 'wikimediafoundation.org', 'google.com', 'worldcat.org', 'jstor.org']
-            valid_refs = [url for url in refs if not any(f in url for f in forbidden)]
+            
+            valid_refs = []
+            for a in external_links:
+                href = a.get('href')
+                if not href.startswith('http'):
+                    continue
+                if any(f in href for f in forbidden):
+                    continue
+                    
+                title_text = a.text.strip()
+                # If text is too short or generic, fallback
+                if len(title_text) < 5 or title_text.lower() in ["archived", "pdf", "edit links"]:
+                    title_text = "Wikipedia Cited Article"
+                else:
+                    # Strip surrounding quotes if present
+                    title_text = title_text.strip('"').strip("'")
+                    
+                valid_refs.append({"url": href, "title": title_text})
             
             # Verify or create the Wikipedia source in the db
             source = self.db.query(models.Source).filter(models.Source.url == wiki_url).first()
             if not source:
                 source = models.Source(
                     movement_id=self.movement.id,
-                    name="Wikipedia References",
+                    name="Wikipedia",
                     platform="wikipedia",
                     url=wiki_url,
                     source_reputation_score=80, # Wikipedia references
@@ -197,20 +211,27 @@ class MovementCollector:
                 self.db.commit()
                 self.db.refresh(source)
 
-            for ref_url in valid_refs:
+            for ref in valid_refs:
+                ref_url = ref["url"]
+                ref_title = ref["title"]
+                
                 # Generate a safe external_id that fits in String(255)
                 safe_ext_id = ref_url if len(ref_url) <= 250 else hashlib.md5(ref_url.encode('utf-8')).hexdigest()
 
                 # Check for existing external URL globally
                 existing = self.db.query(models.Post).filter(models.Post.external_id == safe_ext_id).first()
                 if existing:
+                    # Update title if it was previously inserted as generic
+                    if existing.title == "Wikipedia Cited Article" and ref_title != "Wikipedia Cited Article":
+                        existing.title = ref_title
+                        self.db.add(existing)
                     continue
 
                 published_dt = datetime.datetime.now(datetime.timezone.utc)
                 
                 # Create immutable snapshot payload
                 raw_payload = {
-                    "title": "Wikipedia Reference Citation",
+                    "title": ref_title,
                     "link": ref_url,
                     "summary": "Extracted from Wikipedia references section.",
                     "feed_url": wiki_url,
@@ -221,7 +242,7 @@ class MovementCollector:
                     source_id=source.id,
                     source_platform="news",
                     external_id=safe_ext_id,
-                    title="Wikipedia Cited Article",
+                    title=ref_title,
                     content="Extracted from Wikipedia references. " + ref_url,
                     author="Wikipedia Contributor",
                     post_url=ref_url,
