@@ -141,6 +141,104 @@ class MovementCollector:
         self.db.commit()
         return new_posts_count
 
+    def build_bing_news_url(self, query: str) -> str:
+        encoded = urllib.parse.quote_plus(query)
+        return f"https://www.bing.com/news/search?q={encoded}&format=rss"
+
+    def fetch_bing_news_rss_multi(self, queries: List[str] | None = None) -> int:
+        """
+        Fetch multiple Bing News RSS searches to catch articles Google misses.
+        """
+        total_new = 0
+        for query in queries or DEFAULT_NEWS_QUERIES:
+            feed_url = self.build_bing_news_url(query)
+            try:
+                inserted = self.fetch_rss_news(feed_url=feed_url, source_name=f"Bing News RSS: {query}")
+                print(f"[Collector] Bing News query '{query}' inserted {inserted} posts")
+                total_new += inserted
+            except Exception as e:
+                print(f"[Collector] Bing News query '{query}' failed: {e}")
+        return total_new
+
+    def fetch_wikipedia_references(self, wiki_url: str = "https://en.wikipedia.org/wiki/Cockroach_Janta_Party"):
+        """
+        Scrapes the Wikipedia page to extract external citation URLs.
+        """
+        new_posts_count = 0
+        try:
+            req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0'})
+            html = urllib.request.urlopen(req).read()
+            soup = BeautifulSoup(html, 'html.parser')
+
+            # Extract all external links
+            external_links = soup.find_all('a', href=True)
+            refs = [a.get('href') for a in external_links if a.get('href').startswith('http')]
+            
+            # Filter out wikimedia/wikipedia internal subdomains
+            valid_refs = [url for url in refs if 'wikipedia.org' not in url and 'wikimedia.org' not in url and 'wikidata.org' not in url]
+            
+            # Verify or create the Wikipedia source in the db
+            source = self.db.query(models.Source).filter(models.Source.url == wiki_url).first()
+            if not source:
+                source = models.Source(
+                    movement_id=self.movement.id,
+                    name="Wikipedia References",
+                    platform="wikipedia",
+                    url=wiki_url,
+                    source_reputation_score=80, # Wikipedia references
+                    verification_status="verified"
+                )
+                self.db.add(source)
+                self.db.commit()
+                self.db.refresh(source)
+
+            for ref_url in valid_refs:
+                # Check for existing external URL globally
+                existing = self.db.query(models.Post).filter(models.Post.external_id == ref_url).first()
+                if existing:
+                    continue
+
+                published_dt = datetime.datetime.now(datetime.timezone.utc)
+                
+                # Create immutable snapshot payload
+                raw_payload = {
+                    "title": "Wikipedia Reference Citation",
+                    "link": ref_url,
+                    "summary": "Extracted from Wikipedia references section.",
+                    "feed_url": wiki_url,
+                }
+
+                post = models.Post(
+                    movement_id=self.movement.id,
+                    source_id=source.id,
+                    source_platform="news",
+                    external_id=ref_url,
+                    title="Wikipedia Cited Article",
+                    content="Extracted from Wikipedia references. " + ref_url,
+                    author="Wikipedia Contributor",
+                    post_url=ref_url,
+                    published_at=published_dt,
+                    content_type="news",
+                    credibility_score=0.85, # Wikipedia reference
+                    bot_probability=0.0,
+                    verification_status="verified",
+                    sentiment="analytical",
+                    primary_theme="cjp_live_news",
+                    language_code="en",
+                    raw_payload_json=raw_payload,
+                    is_duplicate=False
+                )
+                self.db.add(post)
+                new_posts_count += 1
+
+            self.db.commit()
+            if new_posts_count > 0:
+                print(f"[Collector] Extracted {new_posts_count} new references from Wikipedia")
+        except Exception as e:
+            print(f"[Collector] Error fetching Wikipedia references: {e}")
+            
+        return new_posts_count
+
     def fetch_reddit_discussions(self, subreddit_name: str = "india", query: str = "Cockroach Janta Party"):
         """
         Crawls Reddit using praw to capture dialectical narrative skepticism and meta-comments.

@@ -37,11 +37,19 @@ def _collect_and_summarize(db: Session):
     wiki_metric = collector.fetch_wikipedia_stats()
     wiki_count = wiki_metric.follower_count if wiki_metric else None
 
-    # Multi-query RSS avoids empty feed when the exact phrase query has no active results.
+    # Fetch from Google News RSS
     if hasattr(collector, "fetch_rss_news_multi"):
         new_articles = collector.fetch_rss_news_multi()
     else:
         new_articles = collector.fetch_rss_news()
+
+    # Fetch from Bing News RSS
+    if hasattr(collector, "fetch_bing_news_rss_multi"):
+        new_articles += collector.fetch_bing_news_rss_multi()
+
+    # Fetch Wikipedia References
+    if hasattr(collector, "fetch_wikipedia_references"):
+        new_articles += collector.fetch_wikipedia_references()
 
     summary_id = None
     summary_error = None
