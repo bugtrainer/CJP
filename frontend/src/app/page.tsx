@@ -26,7 +26,6 @@ import {
   AlertTriangle,
   BarChart3
 } from "lucide-react";
-import ObservatoryTelemetry from "@/components/ObservatoryTelemetry";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 12 },
@@ -829,8 +828,6 @@ export default function Home() {
         </div>
       </main>
 
-      {/* ── Observatory Telemetry & Traffic ── */}
-      <ObservatoryTelemetry />
 
       {/* Footer safe disclaimer */}
       <footer className="border-t border-slate-900 bg-[#09090b] py-8 text-center text-xs text-slate-500 px-4">
