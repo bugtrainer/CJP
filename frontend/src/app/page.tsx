@@ -457,18 +457,24 @@ export default function Home() {
           <Radio size={14} className="animate-pulse" />
           <span className="font-semibold uppercase tracking-wider text-[10px]">Live News:</span>
         </div>
-        {/* We use a traditional marquee for the retro tracker aesthetic */}
-        <marquee className="text-slate-200 font-mono tracking-tight" scrollamount="5">
-          {posts.filter(p => p.platform?.toLowerCase().includes('news') || p.contentType === 'news').length > 0 
-            ? posts.filter(p => p.platform?.toLowerCase().includes('news') || p.contentType === 'news').map((p, i) => (
-              <span key={i} className="mr-12">
-                <span className="text-amber-500/60 mr-2">[ {p.time} ]</span>
-                {p.title || p.content}
-              </span>
-            ))
-            : <span className="text-slate-500">Awaiting incoming news signals...</span>
-          }
-        </marquee>
+        {/* We use Framer Motion for the retro tracker aesthetic */}
+        <div className="overflow-hidden flex-1 whitespace-nowrap">
+          <motion.div 
+            animate={{ x: ["100%", "-100%"] }} 
+            transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
+            className="inline-block text-slate-200 font-mono tracking-tight"
+          >
+            {posts.filter(p => p.platform?.toLowerCase().includes('news') || p.contentType === 'news').length > 0 
+              ? posts.filter(p => p.platform?.toLowerCase().includes('news') || p.contentType === 'news').map((p, i) => (
+                <span key={i} className="mr-12">
+                  <span className="text-amber-500/60 mr-2">[ {p.time} ]</span>
+                  {p.title || p.content}
+                </span>
+              ))
+              : <span className="text-slate-500">Awaiting incoming news signals...</span>
+            }
+          </motion.div>
+        </div>
       </div>
 
       {/* Main Grid Content */}
