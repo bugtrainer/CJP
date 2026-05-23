@@ -187,12 +187,11 @@ class MovementCollector:
                     continue
                     
                 title_text = a.text.strip()
-                # If text is too short or generic, fallback
-                if len(title_text) < 5 or title_text.lower() in ["archived", "pdf", "edit links"]:
-                    title_text = "Wikipedia Cited Article"
-                else:
-                    # Strip surrounding quotes if present
-                    title_text = title_text.strip('"').strip("'")
+                # If text is too short or generic, skip it to avoid spamming the feed
+                if len(title_text) < 15 or title_text.lower() in ["archived", "pdf", "edit links", "official website", "wikimedia foundation, inc."]:
+                    continue
+                # Strip surrounding quotes if present
+                title_text = title_text.strip('"').strip("'")
                     
                 valid_refs.append({"url": href, "title": title_text})
             
