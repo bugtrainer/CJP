@@ -461,7 +461,7 @@ export default function Home() {
         <div className="overflow-hidden flex-1 whitespace-nowrap">
           <motion.div 
             animate={{ x: ["100%", "-100%"] }} 
-            transition={{ repeat: Infinity, duration: 75, ease: "linear" }}
+            transition={{ repeat: Infinity, duration: 120, ease: "linear" }}
             className="inline-block text-slate-200 font-mono tracking-tight"
           >
             {posts.filter(p => p.platform?.toLowerCase().includes('news') || p.contentType === 'news').length > 0 
