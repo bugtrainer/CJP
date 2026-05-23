@@ -461,7 +461,7 @@ export default function Home() {
         <div className="overflow-hidden flex-1 whitespace-nowrap">
           <motion.div 
             animate={{ x: ["100%", "-100%"] }} 
-            transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
+            transition={{ repeat: Infinity, duration: 75, ease: "linear" }}
             className="inline-block text-slate-200 font-mono tracking-tight"
           >
             {posts.filter(p => p.platform?.toLowerCase().includes('news') || p.contentType === 'news').length > 0 
@@ -542,19 +542,19 @@ export default function Home() {
                         href={post.post_url || "#"} 
                         target={post.post_url ? "_blank" : "_self"} 
                         rel="noopener noreferrer" 
-                        className="group flex items-start gap-1.5 text-xs font-semibold text-slate-200 hover:text-amber-500 transition-colors leading-snug"
+                        className="group flex items-start gap-1.5 text-sm font-semibold text-slate-200 hover:text-amber-500 transition-colors leading-snug"
                       >
                         <span>{post.title || post.content}</span>
                         {post.post_url && <ExternalLink size={12} className="shrink-0 mt-0.5 text-slate-500 group-hover:text-amber-500 transition-colors" />}
                       </a>
                       {post.title && post.content && !post.content.includes("<a href=") && (
-                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                        <p className="text-sm text-slate-400 mt-1 leading-relaxed">
                           {post.content}
                         </p>
                       )}
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-300 leading-relaxed font-sans whitespace-pre-line">
+                    <p className="text-sm text-slate-300 leading-relaxed font-sans whitespace-pre-line">
                       {post.content}
                     </p>
                   )}
