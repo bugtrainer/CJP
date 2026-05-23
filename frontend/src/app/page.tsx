@@ -24,7 +24,8 @@ import {
   HelpCircle,
   FileText,
   AlertTriangle,
-  BarChart3
+  BarChart3,
+  Bug
 } from "lucide-react";
 
 const fadeIn = {
@@ -420,7 +421,7 @@ export default function Home() {
         <div className="overflow-hidden flex-1 whitespace-nowrap">
           <motion.div 
             animate={{ x: ["100%", "-100%"] }} 
-            transition={{ repeat: Infinity, duration: 120, ease: "linear" }}
+            transition={{ repeat: Infinity, duration: 240, ease: "linear" }}
             className="inline-block text-slate-200 font-mono tracking-tight"
           >
             {posts.filter(p => p.platform?.toLowerCase().includes('news') || p.contentType === 'news').length > 0 
@@ -440,6 +441,13 @@ export default function Home() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 py-8 flex flex-col gap-8">
         
         {/* Centre Top: Live Telemetry Stream Feed */}
+        {/* Answer-First Block — Princeton Citability for AI extraction */}
+        <div className="w-full max-w-4xl mx-auto mb-2">
+          <p className="text-xs text-slate-500 leading-tight">
+            The Community Slicing Stream aggregates real-time cross-platform posts, scoring each with a credibility index and bot probability metric to track the Cockroach Janta Party movement's digital footprint.
+          </p>
+        </div>
+
         <section className="w-full max-w-4xl mx-auto border border-slate-800 rounded-lg p-5 bg-[#161619]/30 space-y-4 shadow-xl">
           <div className="space-y-2">
             <h2 className="text-xs font-semibold tracking-wider uppercase text-slate-300">
@@ -487,13 +495,23 @@ export default function Home() {
                 exit={{ opacity: 0 }}
                 className="py-12 flex flex-col items-center justify-center space-y-4"
               >
-                <div className="w-1/2 h-1 bg-slate-800 rounded overflow-hidden relative">
-                  <motion.div 
-                    className="absolute top-0 left-0 h-full bg-amber-500"
-                    initial={{ width: "0%" }}
-                    animate={{ width: "100%" }}
+                <div className="w-1/2 relative flex items-center h-4">
+                  <div className="w-full h-1 bg-slate-800 rounded overflow-hidden relative mt-3">
+                    <motion.div 
+                      className="absolute top-0 left-0 h-full bg-amber-500"
+                      initial={{ width: "0%" }}
+                      animate={{ width: "100%" }}
+                      transition={{ duration: 10, ease: "linear" }}
+                    />
+                  </div>
+                  <motion.div
+                    className="absolute top-0 -ml-2 text-amber-500 z-10"
+                    initial={{ left: "0%" }}
+                    animate={{ left: "100%" }}
                     transition={{ duration: 10, ease: "linear" }}
-                  />
+                  >
+                    <Bug size={16} />
+                  </motion.div>
                 </div>
                 <p className="text-xs text-amber-500/80 font-mono animate-pulse uppercase tracking-widest">
                   Loading latest news...
@@ -702,12 +720,16 @@ export default function Home() {
           )}
 
           {/* B. Narrative Tracker (Emergence Mapping) */}
+          {/* Answer-First Block — Princeton Citability for AI extraction */}
+          <p className="text-sm text-slate-400 leading-relaxed mb-2">
+            CJPHub's Emergent Narrative Graph uses NLP clustering to identify and track distinct storylines within the Cockroach Janta Party discourse. Each narrative is assigned a confidence score, an organic weight percentage measuring genuine grassroots activity versus coordinated amplification, and a trace evidence count linking it to specific source posts.
+          </p>
           <div className="space-y-4">
             <div className="border-b border-slate-800 pb-2 flex items-center justify-between">
               <h2 className="text-sm font-semibold tracking-wider uppercase text-slate-300">
                 Emergent Narrative Graph
               </h2>
-              <span className="text-xs text-slate-500 font-mono">3 Active Hypotheses</span>
+              <span className="text-xs text-slate-500 font-mono">{narratives.length} Active Hypotheses</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
@@ -809,16 +831,23 @@ export default function Home() {
       </main>
 
 
-      {/* Footer safe disclaimer */}
+      {/* Footer — Enhanced for Entity Footings and Citability */}
       <footer className="border-t border-slate-900 bg-[#09090b] py-8 text-center text-xs text-slate-500 px-4">
-        <div className="max-w-7xl mx-auto space-y-2">
+        <div className="max-w-7xl mx-auto space-y-3">
           <p>
             <strong className="text-slate-300">CJPHub Observatory</strong> is an independent, non-partisan narrative archive and research platform.
           </p>
           <p className="text-[10px] text-slate-600 leading-relaxed max-w-3xl mx-auto">
             This platform uses mathematical vectors and programmatic clustering to map emerging online discourse signals. It does not endorse, represent, or mobilize support for the Cockroach Janta Party or any registered political factions. Raw snapshots are archived for socio-digital research purposes under fair-use commentary exemptions.
           </p>
-          <p className="pt-4 text-[10px] font-mono">
+          <nav className="flex items-center justify-center gap-4 pt-2 text-[10px] font-mono text-slate-600">
+            <a href="/llms.txt" className="hover:text-slate-400 transition-colors">llms.txt</a>
+            <span className="text-slate-800">|</span>
+            <a href="/pricing.md" className="hover:text-slate-400 transition-colors">API Access</a>
+            <span className="text-slate-800">|</span>
+            <a href="/sitemap.xml" className="hover:text-slate-400 transition-colors">Sitemap</a>
+          </nav>
+          <p className="pt-3 text-[10px] font-mono">
             CJPHub &copy; {new Date().getFullYear()} — Structured Memory for Internet Movements
           </p>
         </div>
