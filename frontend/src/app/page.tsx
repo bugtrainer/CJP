@@ -136,50 +136,8 @@ export default function Home() {
   ]);
 
   // 5. Raw community stream ingestion feed state
-  const [posts, setPosts] = useState<any[]>([
-    {
-      id: 1,
-      platform: "Reddit",
-      author: "u/aspirant_india98",
-      content: "Wait, the CJP X account is actually banned in India now. This isn't just about a parody name anymore, it highlights the exact institutional distress we are talking about.",
-      contentType: "reaction",
-      credibility: 0.85,
-      botProbability: 0.02,
-      time: "24m ago"
-    },
-    {
-      id: 2,
-      platform: "News",
-      author: "India Today",
-      title: "Cockroach Janta Party: Satirical protest debuts convention, claims support from major opposition parliamentarians",
-      content: "A satirical protest group named Cockroach Janta Party held a student convention in New Delhi today. The organizers claim that multiple opposition parliamentarians have registered support for their campaign addressing the youth unemployment crisis.",
-      post_url: "https://www.indiatoday.in/india/story/n1",
-      contentType: "news",
-      credibility: 0.95,
-      botProbability: 0.0,
-      time: "1h ago"
-    },
-    {
-      id: 3,
-      platform: "Instagram",
-      author: "cjp_memes_hq",
-      content: "Rival party 'Indian National Cockroaches' just dropped their manifesto! The satire is collapsing into a multi-party system lmao.",
-      contentType: "meme",
-      credibility: 0.60,
-      botProbability: 0.12,
-      time: "3h ago"
-    },
-    {
-      id: 4,
-      platform: "Reddit",
-      author: "u/meta_analyst",
-      content: "Observe how fast the political framing changed on X today. The organic coordination timing shows highly correlated bursts right before the ban occurred. Possible psyop tracking.",
-      contentType: "opinion",
-      credibility: 0.72,
-      botProbability: 0.08,
-      time: "5h ago"
-    }
-  ]);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
 
   // 6. Synthesized daily summary briefing state
   const [summary, setSummary] = useState({
@@ -354,6 +312,7 @@ export default function Home() {
             }));
           }
         }
+        setIsLoadingPosts(false);
 
         // F. Load daily brief
         const summaryRes = await fetch(`${API_URL}/api/v1/summaries/latest?timeframe=daily`);
@@ -368,6 +327,7 @@ export default function Home() {
       } catch (err) {
         console.warn("FastAPI backend unreachable. Utilizing resilient local graphite simulation datasets.", err);
         setIsLive(false);
+        setIsLoadingPosts(false);
       }
     };
 
@@ -519,7 +479,27 @@ export default function Home() {
           {/* Filtered streams listing */}
           <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
             <AnimatePresence mode="wait">
-            {filteredPosts.length > 0 ? (
+            {isLoadingPosts ? (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="py-12 flex flex-col items-center justify-center space-y-4"
+              >
+                <div className="w-1/2 h-1 bg-slate-800 rounded overflow-hidden relative">
+                  <motion.div 
+                    className="absolute top-0 left-0 h-full bg-amber-500"
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 10, ease: "linear" }}
+                  />
+                </div>
+                <p className="text-xs text-amber-500/80 font-mono animate-pulse uppercase tracking-widest">
+                  Loading latest news...
+                </p>
+              </motion.div>
+            ) : filteredPosts.length > 0 ? (
               filteredPosts.map((post, idx) => (
                 <motion.div
                   key={post.id}
