@@ -50,7 +50,7 @@ export default function Home() {
 
   // 1. Core metrics state with realistic CJP telemetry fallback values
   const [metrics, setMetrics] = useState({
-    followers: "14,832,930",
+    followers: "2,25,00,000",
     followerChange: "+1.2M (24h)",
     mentionsPerMinute: "420",
     crawlerStatus: "Active",
@@ -181,7 +181,7 @@ export default function Home() {
           if (metricsData.length > 0) {
             const instaMetrics = metricsData.filter((m: any) => m.platform === "instagram");
             const latestInsta = instaMetrics[0];
-            const totalFollowers = latestInsta ? latestInsta.follower_count : 14832930;
+            const totalFollowers = latestInsta ? latestInsta.follower_count : 22500000;
             const totalMpm = metricsData.reduce((acc: number, m: any) => acc + (m.mentions_per_minute || 0), 0);
             
             // Calculate real follower change from oldest to newest instagram metric
