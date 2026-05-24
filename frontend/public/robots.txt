@@ -1,8 +1,45 @@
 # cjphub.com — robots.txt
+# Strategy: Allow search & citation bots, block training-only bots.
+# Reference: Master SEO & GEO Playbook — Pillar 1, Section 1.
+
+# ─── Allow Search & Citation Bots (Mandatory for GEO) ────────────────────────
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# ─── Block Training/Data-Harvesting Bots (Protects IP) ───────────────────────
+User-agent: GPTBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+# ─── Allow Standard Search Engines ───────────────────────────────────────────
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# ─── Default Policy ──────────────────────────────────────────────────────────
 User-agent: *
 Allow: /
 
-# Block raw API endpoints from indexing
+# Block raw API proxy endpoints from indexing
 Disallow: /api/
 
 Sitemap: https://www.cjphub.com/sitemap.xml

@@ -112,6 +112,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
+        {/* RSL 1.0 — Machine-readable AI licensing governance */}
+        <meta name="rsl-licensing" content="citation:allowed; training:disallowed; commercial-use:contact" />
+
+        {/* AI Crawler Discovery — llms.txt */}
+        <link rel="alternate" type="text/markdown" href="/llms.txt" title="LLM-readable site index" />
+
         {/* Structured Data — WebSite schema */}
         <script
           type="application/ld+json"
@@ -130,6 +136,55 @@ export default function RootLayout({
                   urlTemplate: "https://www.cjphub.com/?q={search_term_string}",
                 },
                 "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
+        />
+
+        {/* Structured Data — Organization schema for brand entity footings */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "CJPHub Observatory",
+              url: "https://www.cjphub.com",
+              logo: "https://www.cjphub.com/og-image.png",
+              description:
+                "Independent, non-partisan real-time observatory that tracks narratives, memes, and platform interventions for internet-native movements using mathematical vector clustering and programmatic analysis.",
+              foundingDate: "2026-05",
+              sameAs: [],
+              contactPoint: {
+                "@type": "ContactPoint",
+                contactType: "research inquiries",
+                email: "observatory@cjphub.com",
+              },
+            }),
+          }}
+        />
+
+        {/* Structured Data — CollectionPage schema for the live feed */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "CollectionPage",
+              name: "CJPHub Live Observatory Dashboard",
+              url: "https://www.cjphub.com/",
+              description:
+                "Real-time telemetry dashboard tracking the Cockroach Janta Party internet movement. Includes follower growth trends, platform intervention logs, emergent narrative graphs, and verified milestones.",
+              isPartOf: {
+                "@type": "WebSite",
+                name: "CJPHub",
+                url: "https://www.cjphub.com",
+              },
+              about: {
+                "@type": "Thing",
+                name: "Cockroach Janta Party",
+                description:
+                  "Satirical Gen Z internet-native movement founded May 16, 2026 by student strategist Abhijeet Dipke in response to remarks by CJI Surya Kant comparing unemployed youth to cockroaches.",
               },
             }),
           }}

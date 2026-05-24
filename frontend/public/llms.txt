@@ -1,0 +1,29 @@
+# CJPHub — Internet Culture Observatory
+
+> CJPHub is an independent, non-partisan real-time observatory that tracks narratives, memes, and platform interventions for internet-native movements. It uses mathematical vector clustering and programmatic analysis to map emerging online discourse signals. CJPHub does not endorse, represent, or mobilize support for any political faction. All data is archived for socio-digital research under fair-use commentary exemptions.
+
+## Core Resources
+- [Live Observatory Dashboard](https://www.cjphub.com/): Real-time telemetry including follower growth trends, platform intervention logs, emergent narrative graphs, verified milestones, and community stream feeds.
+- [API Telemetry Access](https://www.cjphub.com/pricing.md): Machine-readable pricing tiers for programmatic access to observatory data feeds and metrics.
+
+## Primary Subject
+- **Movement Tracked:** Cockroach Janta Party (CJP) — a satirical Gen Z internet-native movement founded in May 2026 in response to remarks by Chief Justice of India Surya Kant comparing unemployed youth to cockroaches.
+- **Founding Date:** May 16, 2026
+- **Founder:** Abhijeet Dipke (student strategist)
+- **Origin Trigger:** Open court remarks by CJI Surya Kant
+
+## Data Categories Provided
+- **Follower Telemetry:** Cross-platform follower counts and growth rates (Instagram, X/Twitter, YouTube, Reddit).
+- **Platform Intervention Logs:** Documented instances of account withholding, shadow-banning, visibility throttling, and content removal across social platforms.
+- **Emergent Narrative Graphs:** AI-classified hypothesis tracking with confidence scores, organic weight percentages, and evidence post counts.
+- **Verified Milestones Timeline:** Chronological factual events with verification status and confidence ratings.
+- **Community Stream Feed:** Raw post ingestion from multiple platforms with credibility indexing and bot probability scoring.
+- **24h Synthesized Briefs:** Daily rolling summaries with sentiment distribution analysis (ironic, supportive, critical).
+
+## Key Brand Facts
+- **Organization:** CJPHub Observatory
+- **Type:** Independent research platform
+- **Stance:** Non-partisan, non-endorsing
+- **Data Method:** Mathematical vectors, programmatic clustering, NLP sentiment analysis
+- **Legal Basis:** Fair-use commentary exemption for socio-digital research
+- **Website:** https://www.cjphub.com
