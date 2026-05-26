@@ -610,76 +610,6 @@ export default function Home() {
           {/* Left Section (Primary Observational Panels) */}
           <section className="lg:col-span-2 space-y-8">
           
-          {/* A. Catch Me Up (Central Typographic Summary Brief) */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={sectionFade}
-            className="border border-slate-800 bg-[#161619] rounded-lg p-6 space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h2 className="text-sm font-semibold tracking-wider uppercase text-amber-500 flex items-center gap-2">
-                <Flame size={16} />
-                Catch Me Up — 24h Synthesized Brief
-              </h2>
-              <span className="text-xs text-slate-500 flex items-center gap-1 font-mono">
-                <Clock size={12} />
-                Rolling Snapshot
-              </span>
-            </div>
-
-            <div className="space-y-4">
-              <p className="text-base text-slate-200 leading-relaxed font-serif">
-                {formatBoldText(summary.summary_text)}
-              </p>
-              
-              {summary.bullet_points && summary.bullet_points.length > 0 && (
-                <ul className="space-y-2 text-sm text-slate-300">
-                  {summary.bullet_points.map((bullet, idx) => (
-                    <motion.li
-                      key={idx}
-                      custom={idx}
-                      initial="hidden"
-                      animate="visible"
-                      variants={fadeIn}
-                      className="flex items-start gap-2.5"
-                    >
-                      <span className="text-amber-500 font-bold shrink-0 mt-0.5">•</span>
-                      <span>{formatBoldText(bullet)}</span>
-                    </motion.li>
-                  ))}
-                </ul>
-              )}
-
-              {/* Visual Sentiment Distribution Bar */}
-              <div className="pt-2 space-y-2">
-                <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Sentiment Distribution</span>
-                <div className="flex h-2.5 w-full rounded-full overflow-hidden">
-                  <div
-                    className="bg-amber-600 transition-all duration-700"
-                    style={{ width: `${summary.sentiment_distribution?.ironic || 50}%` }}
-                    title={`Ironic: ${summary.sentiment_distribution?.ironic || 50}%`}
-                  />
-                  <div
-                    className="bg-emerald-600 transition-all duration-700"
-                    style={{ width: `${summary.sentiment_distribution?.supportive || 20}%` }}
-                    title={`Supportive: ${summary.sentiment_distribution?.supportive || 20}%`}
-                  />
-                  <div
-                    className="bg-red-500/80 transition-all duration-700"
-                    style={{ width: `${summary.sentiment_distribution?.critical || 30}%` }}
-                    title={`Critical: ${summary.sentiment_distribution?.critical || 30}%`}
-                  />
-                </div>
-                <div className="flex justify-between text-[10px] font-mono text-slate-500">
-                  <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-amber-600" /> Ironic {summary.sentiment_distribution?.ironic || 50}%</span>
-                  <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-emerald-600" /> Supportive {summary.sentiment_distribution?.supportive || 20}%</span>
-                  <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-red-500/80" /> Critical {summary.sentiment_distribution?.critical || 30}%</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
           {/* A2. Cerebras Llama AI Live News Sentiment Analysis */}
           <motion.div
             initial="hidden"
@@ -784,6 +714,76 @@ export default function Home() {
             </div>
           </motion.div>
 
+
+          {/* A. Catch Me Up (Central Typographic Summary Brief) */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={sectionFade}
+            className="border border-slate-800 bg-[#161619] rounded-lg p-6 space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h2 className="text-sm font-semibold tracking-wider uppercase text-amber-500 flex items-center gap-2">
+                <Flame size={16} />
+                Catch Me Up — 24h Synthesized Brief
+              </h2>
+              <span className="text-xs text-slate-500 flex items-center gap-1 font-mono">
+                <Clock size={12} />
+                Rolling Snapshot
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-base text-slate-200 leading-relaxed font-serif">
+                {formatBoldText(summary.summary_text)}
+              </p>
+              
+              {summary.bullet_points && summary.bullet_points.length > 0 && (
+                <ul className="space-y-2 text-sm text-slate-300">
+                  {summary.bullet_points.map((bullet, idx) => (
+                    <motion.li
+                      key={idx}
+                      custom={idx}
+                      initial="hidden"
+                      animate="visible"
+                      variants={fadeIn}
+                      className="flex items-start gap-2.5"
+                    >
+                      <span className="text-amber-500 font-bold shrink-0 mt-0.5">•</span>
+                      <span>{formatBoldText(bullet)}</span>
+                    </motion.li>
+                  ))}
+                </ul>
+              )}
+
+              {/* Visual Sentiment Distribution Bar */}
+              <div className="pt-2 space-y-2">
+                <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Sentiment Distribution</span>
+                <div className="flex h-2.5 w-full rounded-full overflow-hidden">
+                  <div
+                    className="bg-amber-600 transition-all duration-700"
+                    style={{ width: `${summary.sentiment_distribution?.ironic || 50}%` }}
+                    title={`Ironic: ${summary.sentiment_distribution?.ironic || 50}%`}
+                  />
+                  <div
+                    className="bg-emerald-600 transition-all duration-700"
+                    style={{ width: `${summary.sentiment_distribution?.supportive || 20}%` }}
+                    title={`Supportive: ${summary.sentiment_distribution?.supportive || 20}%`}
+                  />
+                  <div
+                    className="bg-red-500/80 transition-all duration-700"
+                    style={{ width: `${summary.sentiment_distribution?.critical || 30}%` }}
+                    title={`Critical: ${summary.sentiment_distribution?.critical || 30}%`}
+                  />
+                </div>
+                <div className="flex justify-between text-[10px] font-mono text-slate-500">
+                  <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-amber-600" /> Ironic {summary.sentiment_distribution?.ironic || 50}%</span>
+                  <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-emerald-600" /> Supportive {summary.sentiment_distribution?.supportive || 20}%</span>
+                  <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-red-500/80" /> Critical {summary.sentiment_distribution?.critical || 30}%</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
 
 
           {/* B. Narrative Tracker (Emergence Mapping) */}
