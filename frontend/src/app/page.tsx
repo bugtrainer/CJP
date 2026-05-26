@@ -2,14 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+
 import { 
   Activity, 
   ShieldAlert, 
@@ -46,7 +39,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isLive, setIsLive] = useState(false);
-  const [metricsHistory, setMetricsHistory] = useState<any[]>([]);
+
 
   // 1. Core metrics state with realistic CJP telemetry fallback values
   const [metrics, setMetrics] = useState({
@@ -151,6 +144,42 @@ export default function Home() {
     sentiment_distribution: { supportive: 20, ironic: 50, critical: 30 }
   });
 
+  // 7. Qwen Sentiment Analysis state
+  const [sentimentData, setSentimentData] = useState<{
+    sentiment?: { positive: number; neutral: number; negative: number };
+    insight?: string;
+  } | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Trigger sentiment analysis when posts are available
+  useEffect(() => {
+    const analyzeSentiment = async () => {
+      // only run once if sentimentData is null
+      if (posts.length === 0 || isAnalyzing || sentimentData) return;
+      setIsAnalyzing(true);
+      try {
+        const res = await fetch("/api/sentiment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ posts })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSentimentData(data);
+        }
+      } catch (err) {
+        console.error("Failed to analyze sentiment", err);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    };
+    
+    // Auto-analyze once posts are loaded
+    if (posts.length > 0 && !sentimentData && !isAnalyzing) {
+      analyzeSentiment();
+    }
+  }, [posts, isAnalyzing, sentimentData]);
+
   // Dynamic fetching hook connecting UI to backend API database
   useEffect(() => {
     const getApiUrl = () => {
@@ -213,16 +242,7 @@ export default function Home() {
               lastUpdated: lastUpdatedStr
             });
 
-            // Build time-series chart data from Instagram metrics
-            const chartMetrics = [...instaMetrics].reverse();
-            setMetricsHistory(chartMetrics.map((m: any) => {
-              const d = new Date(m.timestamp);
-              return {
-                time: d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }),
-                followers: Math.round(m.follower_count / 1000),
-                mentions: m.mentions_per_minute,
-              };
-            }));
+
           }
         }
 
@@ -656,68 +676,94 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* A2. Metrics Trend Chart */}
-          {metricsHistory.length > 1 && (
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={sectionFade}
-              className="border border-slate-800 bg-[#161619] rounded-lg p-5 space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-semibold tracking-wider uppercase text-slate-300 flex items-center gap-2">
-                  <BarChart3 size={14} className="text-amber-500" />
-                  Follower Growth Trend (24h)
-                </h2>
-                <span className="text-[10px] font-mono text-slate-500">Instagram · thousands</span>
-              </div>
-              <div className="h-40">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={metricsHistory} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="followerGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#d97706" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#d97706" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis
-                      dataKey="time"
-                      tick={{ fontSize: 9, fill: "#64748b" }}
-                      axisLine={{ stroke: "#1e1e24" }}
-                      tickLine={false}
-                      interval={"preserveStartEnd"}
+          {/* A2. Qwen AI Live News Sentiment Analysis */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={sectionFade}
+            className="border border-slate-800 bg-[#161619] rounded-lg p-5 space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h2 className="text-xs font-semibold tracking-wider uppercase text-slate-300 flex items-center gap-2">
+                <Activity size={14} className="text-amber-500" />
+                Live Stream Sentiment (Qwen-Max)
+              </h2>
+              {isAnalyzing && (
+                <span className="text-[10px] text-amber-500 font-mono animate-pulse flex items-center gap-1">
+                  <Radio size={10} />
+                  Analyzing Stream...
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-4 min-h-[140px] flex flex-col justify-center">
+              {!sentimentData && !isAnalyzing ? (
+                <div className="text-center text-slate-500 text-xs font-mono">
+                  Awaiting sufficient data stream to perform sentiment analysis...
+                </div>
+              ) : isAnalyzing && !sentimentData ? (
+                <div className="text-center space-y-2">
+                  <div className="h-1 w-full bg-slate-800 rounded overflow-hidden">
+                    <motion.div
+                      className="h-full bg-amber-500"
+                      initial={{ width: "0%" }}
+                      animate={{ width: "100%" }}
+                      transition={{ duration: 3, ease: "linear", repeat: Infinity }}
                     />
-                    <YAxis
-                      tick={{ fontSize: 9, fill: "#64748b" }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(v: number) => `${v}k`}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#161619",
-                        border: "1px solid #2d2d34",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        color: "#f8fafc",
-                      }}
-                      labelStyle={{ color: "#94a3b8" }}
-                      formatter={(value: number) => [`${value.toLocaleString()}k`, "Followers"]}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="followers"
-                      stroke="#d97706"
-                      strokeWidth={2}
-                      fill="url(#followerGrad)"
-                      dot={false}
-                      activeDot={{ r: 3, fill: "#d97706", stroke: "#161619", strokeWidth: 2 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </motion.div>
-          )}
+                  </div>
+                  <div className="text-amber-500/80 text-[10px] uppercase tracking-widest font-mono">
+                    Qwen-3.7-Max is processing raw data...
+                  </div>
+                </div>
+              ) : sentimentData ? (
+                <>
+                  <div className="space-y-2">
+                    <p className="text-sm text-slate-300 leading-relaxed font-sans">
+                      {sentimentData.insight}
+                    </p>
+                  </div>
+                  
+                  {/* Real-time Sentiment Bar */}
+                  <div className="pt-2 space-y-2">
+                    <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Stream Sentiment Output</span>
+                    <div className="flex h-3 w-full rounded-full overflow-hidden">
+                      <div
+                        className="bg-emerald-600 transition-all duration-700 relative group"
+                        style={{ width: `${sentimentData.sentiment?.positive || 0}%` }}
+                      >
+                        <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-emerald-400 text-[10px] px-2 py-1 rounded shadow pointer-events-none transition-opacity z-10 whitespace-nowrap">
+                          Positive: {sentimentData.sentiment?.positive || 0}%
+                        </div>
+                      </div>
+                      <div
+                        className="bg-slate-500 transition-all duration-700 relative group"
+                        style={{ width: `${sentimentData.sentiment?.neutral || 0}%` }}
+                      >
+                        <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-300 text-[10px] px-2 py-1 rounded shadow pointer-events-none transition-opacity z-10 whitespace-nowrap">
+                          Neutral: {sentimentData.sentiment?.neutral || 0}%
+                        </div>
+                      </div>
+                      <div
+                        className="bg-red-500/80 transition-all duration-700 relative group"
+                        style={{ width: `${sentimentData.sentiment?.negative || 0}%` }}
+                      >
+                        <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-red-400 text-[10px] px-2 py-1 rounded shadow pointer-events-none transition-opacity z-10 whitespace-nowrap">
+                          Negative: {sentimentData.sentiment?.negative || 0}%
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-[10px] font-mono text-slate-500">
+                      <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-emerald-600" /> Positive</span>
+                      <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-slate-500" /> Neutral</span>
+                      <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-red-500/80" /> Negative</span>
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </motion.div>
+
+
 
           {/* B. Narrative Tracker (Emergence Mapping) */}
           {/* Answer-First Block — Princeton Citability for AI extraction */}
