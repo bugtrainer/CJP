@@ -7,6 +7,8 @@ import {
   Activity, 
   ShieldAlert, 
   TrendingUp, 
+  TrendingDown,
+  Minus,
   Clock, 
   Search, 
   ChevronRight, 
@@ -688,7 +690,7 @@ export default function Home() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="text-xs font-semibold tracking-wider uppercase text-slate-300 flex items-center gap-2">
                 <Activity size={14} className="text-amber-500" />
-                Live Stream Sentiment (Llama-3.1-8B)
+                Live Stream Sentiment
               </h2>
               {isAnalyzing && (
                 <span className="text-[10px] text-amber-500 font-mono animate-pulse flex items-center gap-1">
@@ -714,7 +716,7 @@ export default function Home() {
                     />
                   </div>
                   <div className="text-amber-500/80 text-[10px] uppercase tracking-widest font-mono">
-                    Llama-3.1-8B is processing raw data via Cerebras...
+                    Processing raw data stream...
                   </div>
                 </div>
               ) : sentimentData ? (
@@ -725,39 +727,56 @@ export default function Home() {
                     </p>
                   </div>
                   
-                  {/* Real-time Sentiment Bar */}
-                  <div className="pt-2 space-y-2">
-                    <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">Stream Sentiment Output</span>
-                    <div className="flex h-3 w-full rounded-full overflow-hidden">
-                      <div
-                        className="bg-emerald-600 transition-all duration-700 relative group"
-                        style={{ width: `${sentimentData.sentiment?.positive || 0}%` }}
-                      >
-                        <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-emerald-400 text-[10px] px-2 py-1 rounded shadow pointer-events-none transition-opacity z-10 whitespace-nowrap">
-                          Positive: {sentimentData.sentiment?.positive || 0}%
-                        </div>
+                  {/* Vertical Real-time Sentiment Bars */}
+                  <div className="pt-4 space-y-4">
+                    <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block mb-2 border-b border-slate-800/50 pb-2">Media Tone Sentiment</span>
+                    
+                    {/* Positive Bar */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-[10px] font-mono uppercase tracking-wider">
+                        <span className="text-emerald-500 flex items-center gap-1.5"><TrendingUp size={12} /> Positive</span>
+                        <span className="text-emerald-400 font-semibold">{sentimentData.sentiment?.positive || 0}%</span>
                       </div>
-                      <div
-                        className="bg-slate-500 transition-all duration-700 relative group"
-                        style={{ width: `${sentimentData.sentiment?.neutral || 0}%` }}
-                      >
-                        <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-slate-300 text-[10px] px-2 py-1 rounded shadow pointer-events-none transition-opacity z-10 whitespace-nowrap">
-                          Neutral: {sentimentData.sentiment?.neutral || 0}%
-                        </div>
-                      </div>
-                      <div
-                        className="bg-red-500/80 transition-all duration-700 relative group"
-                        style={{ width: `${sentimentData.sentiment?.negative || 0}%` }}
-                      >
-                        <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-red-400 text-[10px] px-2 py-1 rounded shadow pointer-events-none transition-opacity z-10 whitespace-nowrap">
-                          Negative: {sentimentData.sentiment?.negative || 0}%
-                        </div>
+                      <div className="h-1.5 w-full bg-[#161619] rounded-full overflow-hidden border border-slate-800/30">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${sentimentData.sentiment?.positive || 0}%` }}
+                          transition={{ duration: 1, ease: "easeOut" }}
+                          className="h-full bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                        />
                       </div>
                     </div>
-                    <div className="flex justify-between text-[10px] font-mono text-slate-500">
-                      <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-emerald-600" /> Positive</span>
-                      <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-slate-500" /> Neutral</span>
-                      <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-red-500/80" /> Negative</span>
+
+                    {/* Negative Bar */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-[10px] font-mono uppercase tracking-wider">
+                        <span className="text-red-500/90 flex items-center gap-1.5"><TrendingDown size={12} /> Negative</span>
+                        <span className="text-red-400 font-semibold">{sentimentData.sentiment?.negative || 0}%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-[#161619] rounded-full overflow-hidden border border-slate-800/30">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${sentimentData.sentiment?.negative || 0}%` }}
+                          transition={{ duration: 1, ease: "easeOut" }}
+                          className="h-full bg-red-500/80 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.3)]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Neutral Bar */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-[10px] font-mono uppercase tracking-wider">
+                        <span className="text-slate-400 flex items-center gap-1.5"><Minus size={12} /> Neutral / Factual</span>
+                        <span className="text-slate-300 font-semibold">{sentimentData.sentiment?.neutral || 0}%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-[#161619] rounded-full overflow-hidden border border-slate-800/30">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${sentimentData.sentiment?.neutral || 0}%` }}
+                          transition={{ duration: 1, ease: "easeOut" }}
+                          className="h-full bg-slate-500 rounded-full shadow-[0_0_6px_rgba(100,116,139,0.3)]"
+                        />
+                      </div>
                     </div>
                   </div>
                 </>
