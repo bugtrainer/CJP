@@ -154,8 +154,7 @@ export default function Home() {
   // Trigger sentiment analysis when posts are available
   useEffect(() => {
     const analyzeSentiment = async () => {
-      // only run once if sentimentData is null
-      if (posts.length === 0 || isAnalyzing || sentimentData) return;
+      if (posts.length === 0) return;
       setIsAnalyzing(true);
       try {
         const res = await fetch("/api/sentiment", {
@@ -166,6 +165,8 @@ export default function Home() {
         if (res.ok) {
           const data = await res.json();
           setSentimentData(data);
+        } else {
+          console.error("API Error", await res.text());
         }
       } catch (err) {
         console.error("Failed to analyze sentiment", err);
@@ -178,7 +179,8 @@ export default function Home() {
     if (posts.length > 0 && !sentimentData && !isAnalyzing) {
       analyzeSentiment();
     }
-  }, [posts, isAnalyzing, sentimentData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posts]);
 
   // Dynamic fetching hook connecting UI to backend API database
   useEffect(() => {
@@ -676,7 +678,7 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* A2. Qwen AI Live News Sentiment Analysis */}
+          {/* A2. Cerebras Llama AI Live News Sentiment Analysis */}
           <motion.div
             initial="hidden"
             animate="visible"
@@ -686,7 +688,7 @@ export default function Home() {
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h2 className="text-xs font-semibold tracking-wider uppercase text-slate-300 flex items-center gap-2">
                 <Activity size={14} className="text-amber-500" />
-                Live Stream Sentiment (Qwen-Max)
+                Live Stream Sentiment (Llama-3.1-8B)
               </h2>
               {isAnalyzing && (
                 <span className="text-[10px] text-amber-500 font-mono animate-pulse flex items-center gap-1">
@@ -712,7 +714,7 @@ export default function Home() {
                     />
                   </div>
                   <div className="text-amber-500/80 text-[10px] uppercase tracking-widest font-mono">
-                    Qwen-3.7-Max is processing raw data...
+                    Llama-3.1-8B is processing raw data via Cerebras...
                   </div>
                 </div>
               ) : sentimentData ? (

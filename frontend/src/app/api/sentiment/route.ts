@@ -8,9 +8,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No posts provided' }, { status: 400 });
     }
 
-    const apiKey = process.env.QWEN_API_KEY;
+    const apiKey = process.env.CEREBRAS_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'QWEN_API_KEY is not set' }, { status: 500 });
+      return NextResponse.json({ error: 'CEREBRAS_API_KEY is not set' }, { status: 500 });
     }
 
     // Filter to news or relevant posts and limit to the most recent 10 posts
@@ -37,15 +37,15 @@ Provide the response strictly in the following JSON format (no markdown blocks, 
 }
 `;
 
-    // Using the Qwen compatible mode endpoint
-    const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+    // Using Cerebras API for lightning-fast inference
+    const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'qwen-max', 
+        model: 'llama3.1-8b', 
         messages: [
           { role: 'system', content: 'You are an expert AI social media analyst. You must only respond in strictly valid JSON format.' },
           { role: 'user', content: prompt }
@@ -56,8 +56,8 @@ Provide the response strictly in the following JSON format (no markdown blocks, 
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error("Qwen API Error:", errorData);
-      return NextResponse.json({ error: 'Failed to fetch from Qwen API' }, { status: response.status });
+      console.error("Cerebras API Error:", errorData);
+      return NextResponse.json({ error: 'Failed to fetch from Cerebras API', details: errorData }, { status: response.status });
     }
 
     const data = await response.json();
