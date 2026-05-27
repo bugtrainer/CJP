@@ -45,7 +45,7 @@ Provide the response strictly in the following JSON format (no markdown blocks, 
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'llama3.1-8b', 
+        model: 'llama-3.3-70b', 
         messages: [
           { role: 'system', content: 'You are an expert AI social media analyst. You must only respond in strictly valid JSON format.' },
           { role: 'user', content: prompt }
