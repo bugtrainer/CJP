@@ -315,7 +315,10 @@ export default function Home() {
         if (feedRes.ok) {
           const feedData = await feedRes.json();
           if (feedData.length > 0) {
-            setPosts(feedData.map((p: any) => {
+            // Deduplicate posts to prevent the same news from appearing multiple times
+            const uniqueFeedData = Array.from(new Map(feedData.map((p: any) => [(p.title || p.content)?.trim(), p])).values());
+            
+            setPosts(uniqueFeedData.map((p: any) => {
               const minsDiff = Math.round((new Date().getTime() - new Date(p.published_at || p.created_at).getTime()) / 60000);
               let timeStr = "1h ago";
               if (minsDiff < 60) timeStr = `${minsDiff}m ago`;
