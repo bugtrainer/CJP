@@ -151,6 +151,7 @@ export default function Home() {
     sentiment?: { positive: number; neutral: number; negative: number };
     insight?: string;
   } | null>(null);
+  const [sentimentError, setSentimentError] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Trigger sentiment analysis when posts are available
@@ -158,6 +159,7 @@ export default function Home() {
     const analyzeSentiment = async () => {
       if (posts.length === 0) return;
       setIsAnalyzing(true);
+      setSentimentError(null);
       try {
         const res = await fetch("/api/sentiment", {
           method: "POST",
@@ -168,17 +170,20 @@ export default function Home() {
           const data = await res.json();
           setSentimentData(data);
         } else {
-          console.error("API Error", await res.text());
+          const errText = await res.text();
+          console.error("API Error", errText);
+          setSentimentError(`Failed: ${res.status} ${errText}`);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to analyze sentiment", err);
+        setSentimentError(`Network Error: ${err.message}`);
       } finally {
         setIsAnalyzing(false);
       }
     };
     
     // Auto-analyze once posts are loaded
-    if (posts.length > 0 && !sentimentData && !isAnalyzing) {
+    if (posts.length > 0 && !sentimentData && !isAnalyzing && !sentimentError) {
       analyzeSentiment();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -634,7 +639,11 @@ export default function Home() {
             </div>
 
             <div className="space-y-4 min-h-[140px] flex flex-col justify-center">
-              {!sentimentData && !isAnalyzing ? (
+              {sentimentError ? (
+                <div className="text-center text-red-500 text-xs font-mono bg-red-500/10 p-3 rounded">
+                  {sentimentError}
+                </div>
+              ) : !sentimentData && !isAnalyzing ? (
                 <div className="text-center text-slate-500 text-xs font-mono">
                   Awaiting sufficient data stream to perform sentiment analysis...
                 </div>
